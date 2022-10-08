@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.0.1-alpha",
   "scripts": {
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon src/index.ts",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^18.8.3",
