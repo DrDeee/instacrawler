@@ -4,23 +4,38 @@ export const driver = neo4j.driver(
     process.env.NEO4J_URI as string
 )
 
+export function transaction() {
+    return driver.session().beginTransaction()
+}
+
 export function session() {
-    const batch: string[] = []
+    const queries: [string, { [key: string]: any }][] = []
+
     return {
         addFollowing(id: number, following: number) {
-            batch.push(`MATCH (u:User {id: ${id}}), (f:User {id: ${following}}) MERGE (f)-[:FOLLOWS]->(u)`)
+            queries.push(['MATCH (u:User {id: $id}), (f:User {id: $following}) MERGE (f)-[:FOLLOWS]->(u)', { id, following }])
         },
         user(id: number, name: string, displayName: string, privateAcc: boolean, follower: number = 0, following: number = 0) {
-            batch.push(
-                `MERGE (u:User {id: ${id}}) ON CREATE SET u.fetched = false , u.name = "${name}", u.displayName = "${displayName}", u.createdInternal = timestamp(), u.private = ${privateAcc}, u.follower = ${follower}, u.following = ${following}`
-            )
+            queries.push([
+                'MERGE (u:User {id: $id}) ON CREATE SET u.fetched = false , u.name = $name, u.displayName = $displayName, u.createdInternal = timestamp(), u.private = $privateAcc, u.follower = $follower, u.following = $following',
+                {
+                    id,
+                    name,
+                    displayName,
+                    privateAcc,
+                    follower,
+                    following
+                }
+            ])
 
         },
         async execute() {
             const session = driver.session()
-            for (const statement of batch) {
-                await session.run(statement)
+            const transaction = session.beginTransaction()
+            for (const statement of queries) {
+                transaction.run(statement[0], statement[1])
             }
+            await transaction.commit()
             await session.close()
         }
     }
