@@ -49,10 +49,10 @@ async function main() {
                 batch.execute()
                 await timeout(7)
             } while (followingFeed.isMoreAvailable())
-            db.fetched(user.pk)
+            await db.fetched(user.pk)
             console.log('User finished: ', user.username)
         } else {
-            db.fetched(user.pk)
+            await db.fetched(user.pk)
             console.log('User skipped: ', user.username)
         }
     }
