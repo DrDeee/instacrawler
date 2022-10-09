@@ -17,7 +17,7 @@ export function session() {
         },
         user(id: number, name: string, displayName: string, privateAcc: boolean, follower: number = 0, following: number = 0) {
             queries.push([
-                'MERGE (u:User {id: $id}) ON CREATE SET u.fetched = false , u.name = $name, u.displayName = $displayName, u.createdInternal = timestamp(), u.private = $privateAcc, u.follower = $follower, u.following = $following',
+                'MERGE (u:User {id: $id}) ON CREATE SET u._fetched = false , u.name = $name, u.displayName = $displayName, u._created = timestamp(), u.private = $privateAcc, u.follower = $follower, u.following = $following ON MATCH SET u.follower = $follower, u.following = $following',
                 {
                     id,
                     name,
@@ -43,7 +43,7 @@ export function session() {
 
 export async function entry(): Promise<number> {
     const session = driver.session()
-    const result = await session.run('MATCH (u:User) WHERE u.fetched = false RETURN u.id ORDER BY u.createdInternal LIMIT 1 ')
+    const result = await session.run('MATCH (u:User) WHERE u._fetched = false RETURN u.id ORDER BY u._created LIMIT 1 ')
     await session.close()
     if (result.records.length > 0)
         return result.records[0].get('u.id') as number
@@ -59,7 +59,7 @@ export async function user(id: number, name: string, displayName: string, privat
 export async function fetched(id: number) {
     const session = driver.session()
     await session.run(
-        'MATCH (u:User {id: $id}) SET u.fetched = true',
+        'MATCH (u:User {id: $id}) SET u._fetched = true',
         { id }
     )
     await session.close()
